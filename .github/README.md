@@ -2,10 +2,20 @@
 
 ![](editor.png)
 
+## Disclaimer
+Heavily in development, files might not be compatible in th future
+
 ## How to use
 - start with `cargo build`/`cargo run`
 - file gets saved to `autosave.syb` <br>
 -> delete that file for fresh start
+- instruments:<br>
+    currently only primitive waves with manual volume setting
+  - SIN -> sine wave
+  - SQR -> square wave
+  - SAW -> saw wave
+  - TRI -> triangle wave
+  
 
 ## Key binds
 - arrow, top/bottom, left/right -> move
