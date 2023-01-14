@@ -1,0 +1,8 @@
+[package]
+name = "sibit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+getch = "0.3.1"
+rodio = "0.16.0"
