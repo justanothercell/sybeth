@@ -198,6 +198,15 @@ impl Cli {
                         input.playing = false;
                     }
                 }).collect::<Vec<_>>();
+            } else if millis >= self.next_note_time - 1000 / self.music.bps as u128 / 4 {  // end of 3/4 "short" note
+                let _ = self.channels.iter_mut().enumerate().map(|(i, channel)| {
+                    let mut input = channel.input.lock().unwrap();
+                    if let Some(note) = &self.music.at(i, self.play_cursor as usize).note && channel.enabled {
+                        if note.short {
+                            input.playing = false;
+                        }
+                    }
+                }).collect::<Vec<_>>();
             }
             self.move_cursor_to(0, self.play_cursor + 16);
             self.cursor.0 = -1;

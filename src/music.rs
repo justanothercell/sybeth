@@ -91,15 +91,15 @@ impl Tone {
     }
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
-        self.note.as_ref().map(|note| vec![note.note, note.octave]).unwrap_or(vec![0])
+        self.note.as_ref().map(|note| vec![note.note, note.octave | if note.short { 0b1000_0000 } else {0}]).unwrap_or(vec![0])
     }
 
     pub(crate) fn deserialize(bytes: &mut dyn Iterator<Item=u8>) -> Self {
         let note = bytes.next().unwrap();
         if note != 0 {
             let d = bytes.next().unwrap();
-            let octave = d & 0b01111111;
-            let short = d & 0b10000000 > 0;
+            let octave = d & 0b0111_1111;
+            let short = d & 0b1000_0000 > 0;
             Tone::note(note, octave, short)
         } else {
             Tone::empty()

@@ -26,6 +26,7 @@ Heavily in development, files might not be compatible in th future
 - \# -> toggle sharp version of note
 - +/- insert/delete row
 - I/K -> swap rows up/down
+- . -> toggle short note (3/4) 
 - esc -> exit and save to auto_save.syb
 - m -> start recording macro, stop with m again
 - , -> run macro
