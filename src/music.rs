@@ -72,9 +72,10 @@ impl Tone {
         }
     }
 
-    pub(crate) fn note(note: u8, octave: u8) -> Self{
+    pub(crate) fn note(note: u8, octave: u8, short: bool) -> Self{
         Tone {
             note: Some(Note {
+                short,
                 note,
                 octave,
             })
@@ -85,7 +86,7 @@ impl Tone {
         if let Some(n) = &self.note {
             n.render()
         } else {
-            String::from("\x1b[38;5;245m---")
+            String::from("\x1b[38;5;245m----")
         }
     }
 
@@ -94,10 +95,12 @@ impl Tone {
     }
 
     pub(crate) fn deserialize(bytes: &mut dyn Iterator<Item=u8>) -> Self {
-        let n = bytes.next().unwrap();
-        if n != 0 {
-            let o = bytes.next().unwrap();
-            Tone::note(n, o)
+        let note = bytes.next().unwrap();
+        if note != 0 {
+            let d = bytes.next().unwrap();
+            let octave = d & 0b01111111;
+            let short = d & 0b10000000 > 0;
+            Tone::note(note, octave, short)
         } else {
             Tone::empty()
         }
@@ -107,12 +110,13 @@ impl Tone {
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct Note {
     pub(crate) note: u8,
-    pub(crate) octave: u8
+    pub(crate) octave: u8,
+    pub(crate) short: bool
 }
 
 impl Note {
     pub(crate) fn render(&self) -> String{
-        format!("{}{}", match self.note {
+        format!("{}{}{}{}", match self.note {
             1 => "\x1b[38;5;196mC-",
             2 => "\x1b[38;5;202mC#",
             3 => "\x1b[38;5;208mD-",
@@ -122,11 +126,23 @@ impl Note {
             7 => "\x1b[38;5;48mF#",
             8 => "\x1b[38;5;51mG-",
             9 => "\x1b[38;5;39mG#",
-            10 => "\x1b[38;5;21mA-",
+            10 => "\x1b[38;5;27mA-",
             11 => "\x1b[38;5;129mA#",
             12 => "\x1b[38;5;201mB-",
             _ => panic!("invalid note {}", self.note)
-        }, self.octave)
+        }, match self.octave {
+            0 => "\x1b[38;5;105m",
+            1 => "\x1b[38;5;33m",
+            2 => "\x1b[38;5;51m",
+            3 => "\x1b[38;5;123m",
+            4 => "\x1b[38;5;118m",
+            5 => "\x1b[38;5;190m",
+            6 => "\x1b[38;5;202m",
+            7 => "\x1b[38;5;196m",
+            8 => "\x1b[38;5;200m",
+            9 => "\x1b[38;5;129m",
+            _ => panic!("invalid octave {}", self.octave)
+        }, self.octave, if self.short { "\x1b[38;5;251m!" } else { "\x1b[38;5;245m." } )
     }
     pub(crate) fn frequency(&self) -> f32 {
         let n = self.note + 12 * self.octave;

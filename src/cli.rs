@@ -162,18 +162,20 @@ impl Cli {
             }
 
             b'#' => { let _ = self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.as_mut().map(|n| n.toggle_sharp()); }
+            b'.' => { let _ = self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.as_mut().map(|n| n.short = !n.short); }
+
             b'q' | 83 => { //  83: rem
                 let n = &mut self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note;
                 std::mem::swap(n, &mut None)
             },
 
-            b'c' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 1, octave: 4 }).note = 1,
-            b'd' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 3, octave: 4 }).note = 3,
-            b'e' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 5, octave: 4 }).note = 5,
-            b'f' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 6, octave: 4 }).note = 6,
-            b'g' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 8, octave: 4 }).note = 8,
-            b'a' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 10, octave: 4 }).note = 10,
-            b'b' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 12, octave: 4 }).note = 12,
+            b'c' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 1, octave: 4, short: false }).note = 1,
+            b'd' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 3, octave: 4, short: false }).note = 3,
+            b'e' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 5, octave: 4, short: false }).note = 5,
+            b'f' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 6, octave: 4, short: false }).note = 6,
+            b'g' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 8, octave: 4, short: false }).note = 8,
+            b'a' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 10, octave: 4, short: false }).note = 10,
+            b'b' => self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.get_or_insert(Note { note: 12, octave: 4, short: false }).note = 12,
 
             // numbers 1-9
             c if c >= 48 && c <= 57 => { let _ = self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.as_mut().map(|n| n.octave = c - 48); }
@@ -238,7 +240,7 @@ impl Cli {
                 out.push_str(&format!(" {y:03} │ "));
             }
             if y >= self.music.size().1 {
-                out.push_str(&"     ".repeat(self.music.size().0));
+                out.push_str(&"      ".repeat(self.music.size().0));
             } else {
                 for x in 0..self.music.size().0 {
                     let note = self.music.at(x, y).render();
