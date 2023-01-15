@@ -25,4 +25,7 @@ Heavily in development, files might not be compatible in th future
 - 0-9 -> set octave (default 4)
 - \# -> toggle sharp version of note
 - +/- insert/delete row
-- esc -> exit and save to autosave file
+- I/K -> swap rows up/down
+- esc -> exit and save to auto_save.syb
+- m -> start recording macro, stop with m again
+- , -> run macro

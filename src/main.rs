@@ -3,6 +3,7 @@
 pub(crate) mod cli;
 pub(crate) mod music;
 pub(crate) mod synth;
+pub(crate) mod upgrade;
 
 
 use std::fs::File;
@@ -15,9 +16,11 @@ fn main() {
 		Music::deserialize({
 			let mut buf = vec![];
 			file.read_to_end(&mut buf).expect("unable to read file");
-			&mut buf.into_iter()
+			buf
 	   })
 	}).unwrap_or_else(|_| Music {
+		bps: 8,
+		section_height: 4,
 		notes: vec![
 			[Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty(), Tone::empty() ,Tone::empty(), Tone::empty()];
 			32

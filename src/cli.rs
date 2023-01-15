@@ -22,9 +22,11 @@ pub(crate) struct Cli {
     viewport: i32,
     is_playing: bool,
     play_cursor: i32,
+    viewport_height: i32,
     next_note_time: u128,
     _stream: OutputStream,
-    channels: [SynthChannel;14]
+    channels: [SynthChannel;14],
+    key_macro: Vec<u8>,
 }
 
 impl Cli {
@@ -40,7 +42,9 @@ impl Cli {
             is_playing: false,
             play_cursor: 0,
             next_note_time: 0,
+            viewport_height: 32,
             _stream,
+            key_macro: vec![],
             channels: unsafe {
                 #[allow(invalid_value, deprecated)]
                 let mut arr: [SynthChannel; 14] = std::mem::uninitialized();
@@ -108,10 +112,23 @@ impl Cli {
 
                 71 => self.move_cursor_to(0, self.cursor.1),                               // start
                 79 => self.move_cursor_to(self.music.size().0 as i32, self.cursor.1),      // end
-                73 => self.move_cursor_to(self.cursor.0, 0),                               // screen up
-                81 => self.move_cursor_to(self.cursor.0, self.music.size().1 as i32 - 1),  // screen down
+                73 => self.move_cursor_by(self.cursor.0, -self.viewport_height),                               // screen up
+                81 => self.move_cursor_by(self.cursor.0, self.viewport_height),  // screen down
                 c => println!("{c}")
             }
+
+            b'm' => {  // record macro
+                self.key_macro.clear();
+                let mut c = self.await_input();
+                while c != b'm' {
+                    self.key_macro.push(c);
+                    c = self.await_input();
+                }
+            },
+
+            b',' => {  // run macro
+                self.input.lock().unwrap().append(&mut self.key_macro.clone().into());
+            },
 
             b' ' => {
                 self.is_playing = !self.is_playing;
@@ -122,18 +139,30 @@ impl Cli {
             },
 
             b'+' => {
-                self.music.notes.insert(self.cursor.1 as usize, [Tone::empty();14]);
+                self.music.notes.insert(self.cursor.1 as usize + 1, [Tone::empty();14]);
                 self.move_cursor_by(0, 1);
             },
             b'-' => {
                 if self.music.size().1 > 1{
                     let _ = self.music.notes.remove(self.cursor.1 as usize);
+                    self.move_cursor_by(0, 0);
+                }
+            }
+            b'i' => {
+                if self.cursor.1 > 0 {
+                    self.music.notes.swap(self.cursor.1 as usize, self.cursor.1 as usize - 1);
                     self.move_cursor_by(0, -1);
+                }
+            }
+            b'k' => {
+                if self.cursor.1 < self.music.size().1 as i32 - 1  {
+                    self.music.notes.swap(self.cursor.1 as usize, self.cursor.1 as usize + 1);
+                    self.move_cursor_by(0, 1);
                 }
             }
 
             b'#' => { let _ = self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note.as_mut().map(|n| n.toggle_sharp()); }
-            b'q' | 83 => {//  83: rem
+            b'q' | 83 => { //  83: rem
                 let n = &mut self.music.at_mut(self.cursor.0 as usize, self.cursor.1 as usize).note;
                 std::mem::swap(n, &mut None)
             },
@@ -157,7 +186,7 @@ impl Cli {
             let millis = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis();
             if millis >= self.next_note_time {
                 self.play_cursor = i32::rem_euclid(self.play_cursor + 1, self.music.size().1 as i32);
-                self.next_note_time = millis + 1000 / 8;
+                self.next_note_time = millis + 1000 / self.music.bps as u128;
                 let _ = self.channels.iter_mut().enumerate().map(|(i, channel)| {
                     let mut input = channel.input.lock().unwrap();
                     if let Some(note) = &self.music.at(i, self.play_cursor as usize).note && channel.enabled {
@@ -198,7 +227,11 @@ impl Cli {
             out.push_str(&format!(" \x1b[1;32m{}\x1b[0m ", NAMES[x]));
         }
         out.push_str("\n");
-        for y in self.viewport as usize..(self.viewport + 32) as usize{
+        let visible = self.viewport_height as f32 / self.music.size().1 as f32;
+        let p = self.cursor.1 as f32 / self.music.size().1 as f32;
+        let h = (visible * self.viewport_height as f32) as usize; // scroll bar height
+        let ph = (p * (self.viewport_height as f32 - h as f32 + 1.0)) as usize; // scroll bar y
+        for y in self.viewport as usize..(self.viewport + self.viewport_height) as usize{
             if y as i32 == self.play_cursor {
                 out.push_str(&format!(" \x1b[48;5;237m{y:03}\x1b[0m │ "));
             } else {
@@ -206,23 +239,27 @@ impl Cli {
             }
             if y >= self.music.size().1 {
                 out.push_str(&"     ".repeat(self.music.size().0));
-                out.push('\n');
-                continue
-            }
-            for x in 0..self.music.size().0 {
-                let note = self.music.at(x, y).render();
-                let h = x % 2 == y / 3 % 2;
-                if (x as i32, y as i32) == self.cursor {
-                    out.push_str(&format!("\x1b[48;5;240m {note} \x1b[0m"))
-                } else if y as i32 == self.play_cursor {
-                    out.push_str(&format!("{} {note} \x1b[0m", if h { "\x1b[48;5;236m" } else { "\x1b[48;5;237m" }))
-                } else {
-                    out.push_str(&format!("{} {note} \x1b[0m", if h { "\x1b[48;5;237m" } else { "\x1b[48;5;238m" }))
+            } else {
+                for x in 0..self.music.size().0 {
+                    let note = self.music.at(x, y).render();
+                    let h = x % 2 == y / self.music.section_height as usize % 2;
+                    if (x as i32, y as i32) == self.cursor {
+                        out.push_str(&format!("\x1b[48;5;240m {note} \x1b[0m"))
+                    } else if y as i32 == self.play_cursor {
+                        out.push_str(&format!("{} {note} \x1b[0m", if h { "\x1b[48;5;236m" } else { "\x1b[48;5;237m" }))
+                    } else {
+                        out.push_str(&format!("{} {note} \x1b[0m", if h { "\x1b[48;5;237m" } else { "\x1b[48;5;238m" }))
+                    }
                 }
+            }
+            let absolute_y = y - self.viewport as usize;
+            if absolute_y >= ph && absolute_y < ph + h {
+                out.push_str(" █");
+            } else {
+                out.push_str(" ║");
             }
             out.push('\n');
         }
-        println!("total: {} lines", self.music.size().1);
         out
     }
 

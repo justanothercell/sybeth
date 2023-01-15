@@ -1,6 +1,9 @@
 use std::mem::MaybeUninit;
+use crate::upgrade::upgrade;
 
 pub(crate) struct Music {
+    pub(crate) bps: u8,
+    pub(crate) section_height: u8,
     pub(crate) notes: Vec<[Tone;14]>
 }
 
@@ -18,9 +21,9 @@ impl Music {
     }
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
-        let file_version = 0;
+        let file_version = 1;
         let width = 14;
-        let mut ser = vec![file_version, width];
+        let mut ser = vec![file_version, width, self.bps, self.section_height];
         for y in 0..self.size().1 {
             for x in 0..self.size().0 {
                 ser.append(&mut self.at(x, y).serialize())
@@ -29,11 +32,15 @@ impl Music {
         ser
     }
 
-    pub(crate) fn deserialize(bytes: &mut dyn Iterator<Item=u8>) -> Self {
-        let mut bytes = bytes.peekable();
+    pub(crate) fn deserialize(bytes: Vec<u8>) -> Self {
+        let bytes = upgrade(bytes);
+        let mut bytes = bytes.into_iter().peekable();
         let file_version = bytes.next().unwrap();
         let width = bytes.next().unwrap();
-        assert_eq!(file_version, 0, "invalid file version");
+        let bps = bytes.next().unwrap();
+        let section_height = bytes.next().unwrap();
+        println!("{} {} {} {}", file_version, width, bps, section_height);
+        assert_eq!(file_version, 1, "invalid file version");
         assert_eq!(width, 14, "invalid width");
         let mut notes = vec![];
         while bytes.peek().is_some() {
@@ -46,6 +53,8 @@ impl Music {
             notes.push(unsafe { std::mem::transmute::<_, [Tone; 14]>(row) })
         }
         Self {
+            bps,
+            section_height,
             notes,
         }
     }
