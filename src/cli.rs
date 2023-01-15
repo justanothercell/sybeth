@@ -235,7 +235,7 @@ impl Cli {
         const NAMES: [&'static str; 14] = ["SIN", "SIN", "SIN", "SIN", "SIN", "SIN", "SQR", "SAW", "SQR", "SAW", "TRI", "TRI", "TRI", "TRI"];
         out.push_str("       ");
         for x in 0..self.music.size().0 {
-            out.push_str(&format!(" \x1b[1;32m{}\x1b[0m ", NAMES[x]));
+            out.push_str(&format!(" \x1b[1;32m{} \x1b[0m ", NAMES[x]));
         }
         out.push_str("\n");
         let visible = self.viewport_height as f32 / self.music.size().1 as f32;
