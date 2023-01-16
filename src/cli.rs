@@ -12,6 +12,7 @@ use rodio::{OutputStream, Sink};
 
 use crate::music::{Music, Note, Tone};
 use crate::synth::channel::SynthChannel;
+use crate::synth::create_instrument;
 use crate::synth::waves::{SawSynth, SineSynth, SquareSynth, TriangleSynth};
 use crate::synth::synth_source::SynthSource;
 
@@ -25,7 +26,7 @@ pub(crate) struct Cli {
     viewport_height: i32,
     next_note_time: u128,
     _stream: OutputStream,
-    channels: [SynthChannel;14],
+    channels: Vec<SynthChannel>,
     key_macro: Vec<u8>,
 }
 
@@ -35,7 +36,6 @@ impl Cli {
         print!("\x1b[2J");  // erase screen
         let (_stream, stream_handle) = OutputStream::try_default().unwrap();
         let mut cli = Cli {
-            music,
             input: Default::default(),
             cursor: (0, 0),
             viewport: 0,
@@ -45,39 +45,26 @@ impl Cli {
             viewport_height: 32,
             _stream,
             key_macro: vec![],
-            channels: unsafe {
-                #[allow(invalid_value, deprecated)]
-                let mut arr: [SynthChannel; 14] = std::mem::uninitialized();
-                for (item, inp) in arr.iter_mut().zip(
-                    [
-                        (SynthSource::create(SineSynth), 1.2),
-                        (SynthSource::create(SineSynth), 1.2),
-                        (SynthSource::create(SineSynth), 1.2),
-                        (SynthSource::create(SineSynth), 1.2),
-                        (SynthSource::create(SineSynth), 1.2),
-                        (SynthSource::create(SineSynth), 1.2),
-                        (SynthSource::create(SquareSynth), 0.35),
-                        (SynthSource::create(SawSynth), 0.35),
-                        (SynthSource::create(SquareSynth), 0.35),
-                        (SynthSource::create(SawSynth), 0.35),
-                        (SynthSource::create(TriangleSynth), 0.9),
-                        (SynthSource::create(TriangleSynth), 0.9),
-                        (SynthSource::create(TriangleSynth), 0.9),
-                        (SynthSource::create(TriangleSynth), 0.9),
-                    ]) {
-                    let ((src, input), volume) = inp;
+            channels: {
+                let mut channels = vec![];
+                for i in 0..music.ic.len() {
+                    let id = music.ic[i].id;
+                    let instrument = create_instrument(id);
+                    let (src, input) = SynthSource::create(instrument.synth);
                     let sink = Sink::try_new(&stream_handle).unwrap();
-                    sink.set_volume(0.4 * volume);
+                    sink.set_volume(0.4 * music.ic[i].volume as f32 / 255 as f32);
                     sink.append(src);
                     let sc = SynthChannel {
+                        name: instrument.name,
                         enabled: true,
                         sink,
                         input
                     };
-                    std::ptr::write(item, sc);
+                    channels.push(sc)
                 }
-                arr
-            }
+                channels
+            },
+            music
         };
         let thread_in = cli.input.clone();
         thread::spawn(move ||{
@@ -139,7 +126,7 @@ impl Cli {
             },
 
             b'+' => {
-                self.music.notes.insert(self.cursor.1 as usize + 1, [Tone::empty();14]);
+                self.music.notes.insert(self.cursor.1 as usize + 1, vec![Tone::empty();self.music.size().0]);
                 self.move_cursor_by(0, 1);
             },
             b'-' => {
@@ -232,10 +219,13 @@ impl Cli {
 
     fn render(&self) -> String {
         let mut out = String::new();
-        const NAMES: [&'static str; 14] = ["SIN", "SIN", "SIN", "SIN", "SIN", "SIN", "SQR", "SAW", "SQR", "SAW", "TRI", "TRI", "TRI", "TRI"];
         out.push_str("       ");
         for x in 0..self.music.size().0 {
-            out.push_str(&format!(" \x1b[1;32m{} \x1b[0m ", NAMES[x]));
+            if self.music.ic[x].enabled {
+                out.push_str(&format!(" \x1b[1;32m{} \x1b[0m ", self.channels[x].name));
+            } else {
+                out.push_str(&format!(" \x1b[1;31m{} \x1b[0m ", self.channels[x].name));
+            }
         }
         out.push_str("\n");
         let visible = self.viewport_height as f32 / self.music.size().1 as f32;

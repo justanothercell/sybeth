@@ -1,10 +1,11 @@
-use std::mem::MaybeUninit;
+use std::process::exit;
 use crate::upgrade::upgrade;
 
 pub(crate) struct Music {
     pub(crate) bps: u8,
     pub(crate) section_height: u8,
-    pub(crate) notes: Vec<[Tone;14]>
+    pub(crate) notes: Vec<Vec<Tone>>,
+    pub(crate) ic: Vec<InstrChannel>
 }
 
 impl Music {
@@ -17,13 +18,18 @@ impl Music {
     }
 
     pub(crate) fn size(&self) -> (usize, usize) {
-        (14, self.notes.len())
+        (self.ic.len(), self.notes.len())
     }
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         let file_version = 1;
         let width = 14;
         let mut ser = vec![file_version, width, self.bps, self.section_height];
+        for i in &self.ic {
+            ser.append(&mut i.id.to_le_bytes().into());
+            ser.push(i.volume);
+            ser.push(i.enabled as u8)
+        }
         for y in 0..self.size().1 {
             for x in 0..self.size().0 {
                 ser.append(&mut self.at(x, y).serialize())
@@ -43,21 +49,37 @@ impl Music {
         assert_eq!(file_version, 1, "invalid file version");
         assert_eq!(width, 14, "invalid width");
         let mut notes = vec![];
+        let mut instruments = vec![];
+        for _ in 0..width {
+            let a = bytes.next().unwrap();
+            let b = bytes.next().unwrap();
+            let id = u16::from_le_bytes([a, b]);
+            println!("{id} {a} {b}");
+            exit(0);
+            let volume = bytes.next().unwrap();
+            let enabled = bytes.next().unwrap() > 0;
+            instruments.push(InstrChannel { id, volume, enabled })
+        }
         while bytes.peek().is_some() {
-            let mut row: [MaybeUninit<Tone>; 14] = unsafe {
-                MaybeUninit::uninit().assume_init()
-            };
-            for i in 0..width {
-                row[i as usize] = MaybeUninit::new(Tone::deserialize(&mut bytes));
+            let mut row = vec![];
+            for _ in 0..width {
+                row.push(Tone::deserialize(&mut bytes));
             }
-            notes.push(unsafe { std::mem::transmute::<_, [Tone; 14]>(row) })
+            notes.push(row)
         }
         Self {
             bps,
             section_height,
             notes,
+            ic: instruments
         }
     }
+}
+
+pub(crate) struct InstrChannel {
+    pub(crate) id: u16,
+    pub(crate) volume: u8,
+    pub(crate) enabled: bool
 }
 
 #[derive(Debug, Copy, Clone)]

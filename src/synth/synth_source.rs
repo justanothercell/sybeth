@@ -15,7 +15,7 @@ pub(crate) struct SynthSource {
 }
 
 impl SynthSource {
-    pub fn create(synth: impl Synth + 'static) -> (SynthSource, Arc<Mutex<SynthInput>>) {
+    pub fn create(synth: Box<dyn Synth>) -> (SynthSource, Arc<Mutex<SynthInput>>) {
         let i = Arc::new(Mutex::new(SynthInput {
             playing: false,
             freq: 0.0,
@@ -24,7 +24,7 @@ impl SynthSource {
         let s = Self {
             input: i.clone(),
             time: 0,
-            provider: Box::new(synth),
+            provider: synth
         };
 
         (s, i)
