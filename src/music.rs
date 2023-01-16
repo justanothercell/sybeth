@@ -22,11 +22,10 @@ impl Music {
     }
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
-        let file_version = 1;
-        let width = 14;
-        let mut ser = vec![file_version, width, self.bps, self.section_height];
+        let file_version = 2;
+        let mut ser = vec![file_version, self.size().0 as u8, self.bps, self.section_height];
         for i in &self.ic {
-            ser.append(&mut i.id.to_le_bytes().into());
+            ser.append(&mut i.id.to_be_bytes().into());
             ser.push(i.volume);
             ser.push(i.enabled as u8)
         }
@@ -45,20 +44,16 @@ impl Music {
         let width = bytes.next().unwrap();
         let bps = bytes.next().unwrap();
         let section_height = bytes.next().unwrap();
-        println!("{} {} {} {}", file_version, width, bps, section_height);
-        assert_eq!(file_version, 1, "invalid file version");
-        assert_eq!(width, 14, "invalid width");
+        assert_eq!(file_version, 2, "invalid file version");
         let mut notes = vec![];
-        let mut instruments = vec![];
+        let mut ic = vec![];
         for _ in 0..width {
             let a = bytes.next().unwrap();
             let b = bytes.next().unwrap();
-            let id = u16::from_le_bytes([a, b]);
-            println!("{id} {a} {b}");
-            exit(0);
+            let id = u16::from_be_bytes([a, b]);
             let volume = bytes.next().unwrap();
             let enabled = bytes.next().unwrap() > 0;
-            instruments.push(InstrChannel { id, volume, enabled })
+            ic.push(InstrChannel { id, volume, enabled })
         }
         while bytes.peek().is_some() {
             let mut row = vec![];
@@ -71,7 +66,7 @@ impl Music {
             bps,
             section_height,
             notes,
-            ic: instruments
+            ic
         }
     }
 }

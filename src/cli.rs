@@ -52,11 +52,10 @@ impl Cli {
                     let instrument = create_instrument(id);
                     let (src, input) = SynthSource::create(instrument.synth);
                     let sink = Sink::try_new(&stream_handle).unwrap();
-                    sink.set_volume(0.4 * music.ic[i].volume as f32 / 255 as f32);
+                    sink.set_volume(0.4 * music.ic[i].volume as f32 / 255.0);
                     sink.append(src);
                     let sc = SynthChannel {
                         name: instrument.name,
-                        enabled: true,
                         sink,
                         input
                     };
@@ -178,7 +177,7 @@ impl Cli {
                 self.next_note_time = millis + 1000 / self.music.bps as u128;
                 let _ = self.channels.iter_mut().enumerate().map(|(i, channel)| {
                     let mut input = channel.input.lock().unwrap();
-                    if let Some(note) = &self.music.at(i, self.play_cursor as usize).note && channel.enabled {
+                    if let Some(note) = &self.music.at(i, self.play_cursor as usize).note && self.music.ic[i].enabled {
                         input.freq = note.frequency();
                         input.playing = true;
                     } else {
@@ -188,7 +187,7 @@ impl Cli {
             } else if millis >= self.next_note_time - 1000 / self.music.bps as u128 / 4 {  // end of 3/4 "short" note
                 let _ = self.channels.iter_mut().enumerate().map(|(i, channel)| {
                     let mut input = channel.input.lock().unwrap();
-                    if let Some(note) = &self.music.at(i, self.play_cursor as usize).note && channel.enabled {
+                    if let Some(note) = &self.music.at(i, self.play_cursor as usize).note && self.music.ic[i].enabled {
                         if note.short {
                             input.playing = false;
                         }

@@ -1,8 +1,8 @@
 pub(crate) fn upgrade(bytes: Vec<u8>) -> Vec<u8> {
     upgrade(match bytes[0] {
         0 => upgrade_v1(bytes),
-        99 => upgrade_v2(bytes),
-        1 => return bytes,
+        1 => upgrade_v2(bytes),
+        2 => return bytes,
         v => panic!("invalid file version {v}")
     })
 }
@@ -20,7 +20,7 @@ pub(crate) fn upgrade_v2(mut bytes: Vec<u8>) -> Vec<u8> {
     let mut instrs: Vec<u8> = vec![];
     for _ in 0..6 { 
         // sine
-        instrs.push(0); instrs.push(01);
+        instrs.push(0); instrs.push(1);
         instrs.push(255);
         instrs.push(1);
     }
@@ -34,14 +34,13 @@ pub(crate) fn upgrade_v2(mut bytes: Vec<u8>) -> Vec<u8> {
         instrs.push(74);
         instrs.push(1);
     }
-    for _ in 0..6 {
+    for _ in 0..4 {
         // triangle
         instrs.push(0); instrs.push(4);
         instrs.push(191);
         instrs.push(1);
     }
     let (pre, post) = bytes.split_at(4);
-    
     let mut out = Vec::from(pre);
     out.append(&mut instrs);
     out.append(&mut Vec::from(post));

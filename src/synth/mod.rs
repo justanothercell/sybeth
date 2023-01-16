@@ -1,7 +1,7 @@
 use std::sync::MutexGuard;
 use std::task::ready;
 use crate::synth::synth_source::SynthInput;
-use crate::synth::waves::{SawSynth, SquareSynth, TriangleSynth};
+use crate::synth::waves::{SawSynth, SineSynth, SquareSynth, TriangleSynth};
 
 pub(crate) mod synth_source;
 pub(crate) mod waves;
@@ -36,7 +36,7 @@ pub(crate) const INSTRUMENTS: [u16;5] = [
 pub(crate) fn create_instrument(id: u16) -> Instrument {
    let (name, synth): (&str, Box<dyn Synth>) =  match id {
         0b0000_0000_0000_0000 => ("---", Box::new(DummySynth)),
-        0b0000_0000_0000_0001 => ("SIN", Box::new(DummySynth)),
+        0b0000_0000_0000_0001 => ("SIN", Box::new(SineSynth)),
         0b0000_0000_0000_0010 => ("SQR", Box::new(SquareSynth)),
         0b0000_0000_0000_0011 => ("SAW", Box::new(SawSynth)),
         0b0000_0000_0000_0100 => ("TRI", Box::new(TriangleSynth)),
