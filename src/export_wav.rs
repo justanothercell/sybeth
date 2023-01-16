@@ -31,12 +31,12 @@ pub(crate) fn export_wav<P: AsRef<Path>>(music: &Music, path: P) {
             for t in 0..tick {
                 let mut s = 0.0;
                 for (i, c) in channels.iter_mut().enumerate() {
-                    s += c.0.next().unwrap();
+                    s += c.0.next().unwrap() * music.ic[i].volume as f32;
                     if t == three_quarter_tick && music.at(i, ct).note.map(|note| note.short).unwrap_or(false) {
                         c.1.lock().unwrap().playing = false
                     }
                 }
-                data.push(((s / channels.len() as f32 + 1.0) as f32 * 127.5) as u8);
+                data.push(((s / 255.0 / channels.len() as f32 + 1.0) as f32 * 127.5) as u8);
             }
             println!("\x1b[1Fexporting {:3.1}%", ct as f32 / music.size().1 as f32 * 100.0 as f32)
         }
