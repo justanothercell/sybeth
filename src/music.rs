@@ -162,7 +162,8 @@ impl Note {
         }, self.octave, if self.short { "\x1b[38;5;251m!" } else { "\x1b[38;5;245m." } )
     }
     pub(crate) fn frequency(&self) -> f32 {
-        let n = self.note + 12 * self.octave;
+        // conversion from own system to midi
+        let n = (self.note + 3) % 12 + 12 * if self.note >= 10 { self.octave+1 } else { self.octave };
         f32::powf(2.0, (n as f32 - 49.0) / 12.0) * 440.0
     }
 

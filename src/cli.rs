@@ -5,7 +5,8 @@ use std::fs::File;
 use std::io::Write;
 use std::process::{exit};
 use std::sync::{Arc, Mutex};
-use std::{thread, usize};
+use std::{panic, thread, usize};
+use std::path::Path;
 use std::time::{SystemTime};
 use getch::Getch;
 use rodio::{OutputStream, Sink};
@@ -276,10 +277,14 @@ impl Cli {
     }
 
     fn quit(&self) -> ! {
-        let ser = self.music.serialize();
-        let mut auto_save = File::create("auto_save.syb").expect("error opening file");
-        auto_save.write(ser.as_slice()).expect("error writing to file");
+        self.save("auto_save.syb");
         print!("\x1b[?25h");  // show cursor
         exit(0)
+    }
+
+    fn save<P: AsRef<Path>>(&self, path: P) {
+        let ser = self.music.serialize();
+        let mut auto_save = File::create(path).expect("error opening file");
+        auto_save.write(ser.as_slice()).expect("error writing to file");
     }
 }
