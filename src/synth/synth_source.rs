@@ -43,6 +43,7 @@ impl Iterator for SynthSource {
         if input.playing{
             Some(self.provider.get(self.time, input))
         } else {
+            self.time = 0;
             Some(0.0)
         }
     }
