@@ -5,16 +5,16 @@ use std::fs::File;
 use std::io::Write;
 use std::process::{exit};
 use std::sync::{Arc, Mutex};
-use std::{panic, thread, usize};
+use std::{thread, usize};
 use std::path::Path;
 use std::time::{SystemTime};
 use getch::Getch;
 use rodio::{OutputStream, Sink};
+use crate::export_wav::export_wav;
 
 use crate::music::{Music, Note, Tone};
 use crate::synth::channel::SynthChannel;
 use crate::synth::create_instrument;
-use crate::synth::waves::{SawSynth, SineSynth, SquareSynth, TriangleSynth};
 use crate::synth::synth_source::SynthSource;
 
 pub(crate) struct Cli {
@@ -35,7 +35,7 @@ impl Cli {
     pub(crate) fn start(music: Music) {
         print!("\x1b[?25l");  // hide cursor
         print!("\x1b[2J");  // erase screen
-        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+        let (_stream, stream_handle) = OutputStream::try_default().expect("unable to create audio stream");
         let mut cli = Cli {
             input: Default::default(),
             cursor: (0, 0),
@@ -124,6 +124,8 @@ impl Cli {
                     self.next_note_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis()
                 }
             },
+            
+            b'p' => export_wav(&self.music, "export.wav"),
 
             b'+' => {
                 self.music.notes.insert(self.cursor.1 as usize + 1, vec![Tone::empty();self.music.size().0]);

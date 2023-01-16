@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use rodio::Source;
 use crate::synth::{Synth};
+use crate::synth::waves::SAMPLE_RATE;
 
 pub(crate) struct SynthInput {
     pub(crate) playing: bool,
@@ -62,7 +63,7 @@ impl Source for SynthSource {
 
     #[inline]
     fn sample_rate(&self) -> u32 {
-        44000
+        SAMPLE_RATE as u32
     }
 
     #[inline]

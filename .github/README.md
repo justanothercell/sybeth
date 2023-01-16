@@ -30,3 +30,4 @@ Heavily in development, files might not be compatible in th future
 - esc -> exit and save to auto_save.syb
 - m -> start recording macro, stop with m again
 - , -> run macro
+- P -> export to `export.wav` 

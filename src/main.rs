@@ -4,6 +4,7 @@ pub(crate) mod cli;
 pub(crate) mod music;
 pub(crate) mod synth;
 pub(crate) mod upgrade;
+pub(crate) mod export_wav;
 
 
 use std::fs::File;
