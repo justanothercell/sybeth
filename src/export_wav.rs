@@ -21,9 +21,7 @@ pub(crate) fn export_wav<P: AsRef<Path>>(music: &Music, path: P) {
         for ct in 0..music.size().1 {
             for (i, c) in channels.iter_mut().enumerate() {
                 let mut input = c.1.lock().unwrap();
-                input.playing = music.at(i, ct).note.map_or_else(||{
-                    None
-                }, |note| {
+                input.playing = music.at(i, ct).note.map_or(None, |note| {
                     input.freq = note.frequency();
                     Some(())
                 }).is_some();
