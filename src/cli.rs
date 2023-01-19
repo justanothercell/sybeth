@@ -16,6 +16,7 @@ use crate::music::{Music, Note, Tone};
 use crate::synth::channel::SynthChannel;
 use crate::synth::create_instrument;
 use crate::synth::synth_source::SynthSource;
+use std::process::Command;
 
 pub(crate) struct Cli {
     music: Music,
@@ -31,8 +32,23 @@ pub(crate) struct Cli {
     key_macro: Vec<u8>,
 }
 
+#[cfg(windows)]
+fn enable_virtual_terminal_processing() {
+    use winapi_util::console::Console;
+
+    if let Ok(mut term) = Console::stdout() {
+        let _ = term.set_virtual_terminal_processing(true);
+    }
+    if let Ok(mut term) = Console::stderr() {
+        let _ = term.set_virtual_terminal_processing(true);
+    }
+}
+#[cfg(not(windows))]
+fn enable_virtual_terminal_processing() {}
+
 impl Cli {
     pub(crate) fn start(music: Music) {
+		enable_virtual_terminal_processing();  // init ansi
         print!("\x1b[?25l");  // hide cursor
         print!("\x1b[2J");  // erase screen
         let (_stream, stream_handle) = OutputStream::try_default().expect("unable to create audio stream");

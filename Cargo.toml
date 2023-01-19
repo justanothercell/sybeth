@@ -1,8 +1,11 @@
 [package]
-name = "sibit"
+name = "sybeth"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 getch = "0.3.1"
 rodio = "0.16.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi-util = "0.1"
