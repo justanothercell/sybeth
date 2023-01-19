@@ -1,0 +1,2 @@
+windows bat local ffmpeg path:
+FOR /F "tokens=*" %G IN ('dir /b *.wav') DO "..\..\Python\virtualCam\ffmpeg\bin\ffmpeg" -i "%G" -acodec mp3 "%~nG.mp3"
