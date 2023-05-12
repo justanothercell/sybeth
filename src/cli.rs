@@ -2,7 +2,7 @@
 use std::cmp::{max, min};
 use std::collections::VecDeque;
 use std::fs::File;
-use std::io::Write;
+use std::io::{stdout, Write};
 use std::process::{exit};
 use std::sync::{Arc, Mutex};
 use std::{thread, usize};
@@ -18,20 +18,6 @@ use crate::synth::create_instrument;
 use crate::synth::synth_source::SynthSource;
 use std::process::Command;
 
-pub(crate) struct Cli {
-    music: Music,
-    input: Arc<Mutex<VecDeque<u8>>>,
-    cursor: (i32, i32),
-    viewport: i32,
-    is_playing: bool,
-    play_cursor: i32,
-    viewport_height: i32,
-    next_note_time: u128,
-    _stream: OutputStream,
-    channels: Vec<SynthChannel>,
-    key_macro: Vec<u8>,
-}
-
 #[cfg(windows)]
 fn enable_virtual_terminal_processing() {
     use winapi_util::console::Console;
@@ -46,11 +32,26 @@ fn enable_virtual_terminal_processing() {
 #[cfg(not(windows))]
 fn enable_virtual_terminal_processing() {}
 
+pub(crate) struct Cli {
+    music: Music,
+    input: Arc<Mutex<VecDeque<u8>>>,
+    cursor: (i32, i32),
+    viewport: i32,
+    is_playing: bool,
+    play_cursor: i32,
+    viewport_height: i32,
+    next_note_time: u128,
+    _stream: OutputStream,
+    channels: Vec<SynthChannel>,
+    key_macro: Vec<u8>,
+}
+
 impl Cli {
     pub(crate) fn start(music: Music) {
 		enable_virtual_terminal_processing();  // init ansi
         print!("\x1b[?25l");  // hide cursor
         print!("\x1b[2J");  // erase screen
+        let _ = stdout().flush();
         let (_stream, stream_handle) = OutputStream::try_default().expect("unable to create audio stream");
         let mut cli = Cli {
             input: Default::default(),
