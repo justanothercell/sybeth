@@ -2,9 +2,6 @@
 
 ![](editor.png)
 
-## Disclaimer
-Heavily in development, files might not be compatible in th future
-
 ## How to use
 - start with `cargo build`/`cargo run`
 - file gets saved to `autosave.syb` <br>
