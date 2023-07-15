@@ -20,8 +20,8 @@ fn main() {
 			buf
 	   })
 	}).unwrap_or_else(|_| Music {
-		bps: 8,
-		section_height: 4,
+		bps: 6,
+		section_height: 8,
 		notes: vec![
 			vec![Tone::empty();14];
 			32
